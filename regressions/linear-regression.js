@@ -4,24 +4,39 @@ class LinearRegression {
 	constructor(features, labels, options) {
 		this.features = this.processFeatures(features);
 		this.labels = tf.tensor(labels);
+		this.mseHistory = [];
 		this.options = Object.assign({learningRate: 0.1, iterations: 1000}, options);
 		this.weights = tf.zeros([this.features.shape[1], 1]);
 	}
 
-	train() {
+	train(features, labels) {
+		const batchQuantity = Math.floor(this.features.shape[0] / this.options.batchSize);
 		for (let i = 0; i < this.options.iterations; i++) {
-			this.gradientDescent();
+			for (let j = 0; j < batchQuantity; j++) {
+				const { batchSize } = this.options;
+				const featureSlice = this.features.slice(
+					[j * batchSize, 0],
+					[batchSize, -1]
+				)
+				const labelSlice = this.labels.slice(
+					[j * batchSize, 0],
+					[batchSize, -1]
+				)
+				this.gradientDescent(featureSlice, labelSlice);
+			}
+			this.recordMSE();
+			this.updateLearningRate();
 		}
 	}
 
-	gradientDescent() {
-		const currentGuesses = this.features.matMul(this.weights);
-		const differences = currentGuesses.sub(this.labels);
+	gradientDescent(features, labels) {
+		const currentGuesses = features.matMul(this.weights);
+		const differences = currentGuesses.sub(labels);
 		//slopes
-		const slopes = this.features
+		const slopes = features
 			.transpose()
 			.matMul(differences)
-			.div(this.features.shape[0]);
+			.div(features.shape[0]);
 
 		this.weights = this.weights.sub(slopes.mul(this.options.learningRate));
 	}
@@ -55,6 +70,30 @@ class LinearRegression {
 		this.variance = variance;
 
 		return features.sub(mean).div(variance.pow(0.5));
+	}
+
+	recordMSE() {
+		const mse = this.features
+			.matMul(this.weights)
+			.sub(this.labels)
+			.pow(2)
+			.sum()
+			.div(this.features.shape[0])
+			.get();
+
+		this.mseHistory.unshift(mse);
+	}
+
+	updateLearningRate() {
+		if (this.mseHistory.length <2 ) {
+			return;
+		}
+
+		if (this.mseHistory[0] > this.mseHistory[1]) {
+			this.options.learningRate /= 2;
+		} else {
+			this.options.learningRate *= 1.05;
+		}
 	}
 }
 
