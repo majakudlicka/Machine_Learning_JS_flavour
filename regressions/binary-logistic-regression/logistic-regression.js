@@ -5,7 +5,7 @@ class LogisticRegression {
 		this.features = this.processFeatures(features);
 		this.labels = tf.tensor(labels);
 		this.costHistory = [];
-		this.options = Object.assign({learningRate: 0.1, iterations: 1000, decisionBoundry: 0.5}, options);
+		this.options = Object.assign({learningRate: 0.1, iterations: 1000, decisionBoundary: 0.5}, options);
 		this.weights = tf.zeros([this.features.shape[1], 1]);
 	}
 
@@ -45,7 +45,7 @@ class LogisticRegression {
 		return this.processFeatures(observations)
 			.matMul(this.weights)
 			.sigmoid()
-			.greater(this.options.decisionBoundry)
+			.greater(this.options.decisionBoundary)
 			.cast('float32');
 	}
 
